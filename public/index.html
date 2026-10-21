@@ -269,6 +269,13 @@ const QS=new URLSearchParams(location.search),EMBED=QS.get('embed')==='1'&&windo
 if(EMBED)document.body.classList.add('embed');
 // Nachrichten nur an die einbettende Seite (Origin aus dem Referrer), nie an beliebige Fenster
 const PARENT=(()=>{try{return new URL(document.referrer).origin}catch(e){return null}})();
+// Einmaliger Umzug in die Morgenroutine (Screener ist dort jetzt fest eingebaut):
+// ?export=1 in einem iframe der Morgenroutine → eigene rabe.*-Daten (Liste, Verlauf, Basis, Notizen, Filter)
+// einmal an die Morgenroutine schicken. Nur an morgenroutine*.vercel.app bzw. localhost, nie an fremde Seiten.
+if(QS.get('export')==='1'&&window.parent!==window&&PARENT&&(/^https:\/\/morgenroutine(-[a-z0-9-]+)?\.vercel\.app$/.test(PARENT)||/^http:\/\/localhost(:\d+)?$/.test(PARENT))){
+  const data={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('rabe.'))data[k]=localStorage.getItem(k);}}catch(e){}
+  window.parent.postMessage({type:'aks-export',data},PARENT);
+}
 let list; try{list=localStorage.getItem('rabe.list')}catch(e){}
 $('#t').value=list||DEF;
 const fmtN=(n,d=2)=>n==null||Number.isNaN(n)?'–':n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
